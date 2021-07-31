@@ -1,0 +1,62 @@
+<script>
+  //Change base url
+  google.script.run
+    .withSuccessHandler(url => {
+      $('base').attr('href', url)
+      console.log("base href changed: " + url);
+    })
+    .getScriptUrl();
+
+  //Function to handle hash change
+  function change(e) {
+    let hash = e.location.hash
+    google.script.run
+      .withSuccessHandler(htmlFragment => {
+        console.log("change occurred : " + htmlFragment);
+        $('#main').html(htmlFragment);
+      })
+      .getHtml(hash);
+  }
+  google.script.history.setChangeHandler(change)
+
+  var userSheetLink = localStorage.getItem('user-sheet-link');
+	currentSheetLink = (userSheetLink === null) ? "" : JSON.parse(userSheetLink);
+
+  document.addEventListener('DOMContentLoaded', function() {
+      _initialize_event_listeners();
+      _initialize_fields();
+    });
+
+  function _initialize_event_listeners() {
+      document.getElementById("link").addEventListener("input", fillSheetData);
+      var btnElement = document.getElementById("btn-apply-settings");
+      btnElement.addEventListener("click", applySettings);
+      
+      $("#link").change(function(){
+        document.getElementById("btn-apply-settings").disabled = _should_disable();
+      });
+  }
+
+  function _initialize_fields() {
+    M.Sidenav.init(document.querySelectorAll('.sidenav'));
+    M.FloatingActionButton.init(document.querySelectorAll('.fixed-action-btn'), {});
+  }
+
+  function fillSheetData() {
+    var link = (document.getElementById("link").value == "") ? currentSheetLink : document.getElementById("link").value;
+    if (_is_valid_http_url(link)) {
+      if (link != currentSheetLink) {
+        currentSheetLink = link;
+        localStorage.setItem('user-sheet-link', JSON.stringify(link));
+      }
+    }
+  }
+
+  function applySettings() {
+    
+  }
+  
+  function _should_disable() {
+    return document.getElementById('link').value == "";
+  }
+</script>

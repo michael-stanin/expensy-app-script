@@ -1,0 +1,56 @@
+<style>
+
+.visible {
+  visibility: visible;
+}
+
+.not-visible {
+  visibility: hidden;
+}
+
+  table.highlight > tbody > tr:hover {
+    background-color: teal !important;
+  }
+
+  #toast-container {
+    min-width: 10%;
+    top: 15%;
+    right: 50%;
+    transform: translateX(50%) translateY(50%);
+  }
+
+  .nav-center {
+    display:flex;
+    justify-content: center;
+  }
+
+
+  $body-bg:   #263238;
+  $body-text: #CFD8DC;
+  // morris js
+  .morris-donut-inverse{
+    svg{
+      text[fill="#000000"]{
+        fill: $body-text;
+      }
+      path[stroke="#ffffff"]{
+        stroke: $body-bg;
+      }
+    }
+  }
+
+
+  .mdc-button.mdc-button--raised{
+    background-color: teal !important;
+    color: white !important;
+  }
+
+  .mdc-button{
+    color: teal !important;
+  }
+
+  .mdc-button:disabled {
+    color: rgba(0,0,0,.37) !important;
+  }
+
+</style>

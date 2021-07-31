@@ -1,0 +1,1 @@
+var mylocale = "BG";

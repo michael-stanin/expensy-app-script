@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+     <!--Import materialize.css-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+     <!--Import Fontawesome.css-->
+    <script src="https://use.fontawesome.com/b87b880468.js"></script>
+
+    <!--Let browser know website is optimized for mobile-->
+    <!-- TODO: Figure out how to zoom properly -->
+    <meta name="viewport" content="width=device-width, height=device-height, user-scalable=no">
+    
+    <!-- Use Google's jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    <!-- Morris Donut Chart -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
+    <!--script src="https://www.jsdelivr.com/package/npm/morris.js06"></script-->
+
+    <!-- DataTable -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/material-components-web/4.0.0/material-components-web.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.23/css/dataTables.material.min.css">
+    <link rel="stylesheet" href="https://editor.datatables.net/extensions/Editor/css/editor.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.0.2/css/responsive.dataTables.min.css">
+    <!--link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.7/css/dataTables.responsive.css"-->
+    <!-- Not working https://cdn.datatables.net/responsive/2.2.7/css/dataTables.responsive.css-->    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.7/js/dataTables.responsive.min.js"></script>    
+    <script src="https://cdn.datatables.net/fixedcolumns/3.3.2/js/dataTables.fixedColumns.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.10.12/sorting/datetime-moment.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.10.15/api/sum().js"></script>
+    <script src="https://cdn.datatables.net/1.10.23/js/dataTables.material.min.js"></script>
+    <!--script src="https://editor.datatables.net/extensions/Editor/js/dataTables.editor.min.js"></script-->
+
+    <?!= include("index-css"); ?>
+    <?!= include("charts-css"); ?>
+  </head>
+  <body>
+    
+    <nav class="nav-extended" style="box-shadow: none">
+      <div class="nav-wrapper white">
+        <a data-target="mobile-links" class="sidenav-trigger"><i class="material-icons teal-text text-lighten-1">menu</i></a>
+        <ul id="nav-mobile" class="nav-center hide-on-med-and-down">
+          <li><a id="change-to-settings" class="waves-effect waves-light btn-large" ><i class="material-icons left">settings</i>Настройки</a></li>
+          <li><a id="change-to-add" class="waves-effect waves-light btn-large"><i class="material-icons left">add_circle_outline</i>Нов запис</a></li>
+          <li><a id="change-to-charts" class="waves-effect waves-light btn-large"><i class="material-icons left">pie_chart_outlined</i>Графики</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <ul class="sidenav teal" id="mobile-links">
+      <li><a id="mobile-change-to-settings" class="white-text"><i class="material-icons left white-text">settings</i>Настройки</a></li>
+      <li><a id="mobile-change-to-add" class="white-text"><i class="material-icons left white-text">add_circle_outline</i>Нов запис</a></li>
+      <li><a id="mobile-change-to-charts" class="white-text"><i class="material-icons left white-text">pie_chart_outlined</i>Графики</a></li>
+    </ul>
+    
+    <h1 class="center teal-text text-lighten-1">Expensy</h1>
+
+    <div class="fixed-action-btn">
+      <a id="floating-add" class="btn-floating btn-large teal teal-lighten-1">
+        <i class="large material-icons">add</i>
+      </a>
+      <ul>
+        <li><a id="floating-add-1" class="btn-floating red"><i class="material-icons">money_off</i></a></li>
+        <li><a id="floating-add+1" class="btn-floating green"><i class="material-icons">attach_money</i></a></li>
+      </ul>
+    </div>
+
+    <div id="main">
+      <div class="container cont">
+        <div class="row">    
+            <div class="input-field">
+                <input required id="link" type="url" class="validate">
+                <label for="link">Линк към документ</label>
+            </div>
+            <div class="input-field">
+                <select required id="username">
+                <option value="default" selected>Избери потребител</option>
+                </select>
+            </div>
+            <div class="input-field">
+                <input required id="date" type="text" class="datepicker">
+                <label for="date">Дата</label>
+            </div>
+            <div class="input-field">
+                <input required id="expense" type="text" class="validate autocomplete">
+                <label for="expense">Описание на разход</label>
+            </div>
+            <div class="input-field">
+                <input required id="price" type="number" class="validate" step="0.01" min="0">
+                <label for="price">Цена</label>
+            </div>
+            <div class="input-field">
+                <select required id="category">
+                <option selected>Избери категория</option>
+                </select>
+            </div>
+
+            <br/>
+            <div class="center">
+                <button disabled id="btn-store" class="center waves-effect waves-light btn-large"><i class="material-icons left">chevron_right</i>Добави</button>
+            </div>
+        </div>
+      </div>
+    </div> <!-- main -->
+    
+    <div id="charts">
+      <div class="container" id="contents-donut">
+        <div class="row">
+          <div id="expenses-donut" class="morris-donut-inverse"></div>
+          <!--div id="year-donut2" class="morris-donut-inverse"></div>
+          <div id="year-donut3" class="morris-donut-inverse"></div-->
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row">
+          <div class="col s12 center teal-text text-lighten-1">
+            <h5 class="flow-text .center-align" id="total-sum"></h5>      
+          </div>
+        </div>
+      </div>
+
+      <div class="container cont nav-center" id="contents-table">
+        <div class="nav-center">
+          <table id="expenses-table" class="mdl-data-table nowrap" style="width:100% !important;" >
+            <thead>
+              <tr>
+                  <th>Разход</th>
+                  <th>Цена</th>
+                  <th>Дата</th>
+                  <th>Закупил</th>
+                  <th>Категория</th>
+              </tr>
+            </thead>
+
+            <tbody id="datatable-body">
+            </tbody>
+          </table>
+        </div>
+      </div> <!-- CLOSE CONTAINER -->
+    </div> <!-- charts -->
+
+    <div id="settings">
+      <div class="container cont">
+        <div class="row">    
+          <div class="input-field">
+            <input required id="settings-link" type="url" class="validate">
+            <label for="settings-link">Линк към документ</label>
+          </div>
+          <br/>
+        </div><!-- CLOSE ROW -->
+        <div class="center">
+          <button disabled id="btn-apply-settings" class="center waves-effect waves-light btn-large"><i class="material-icons left">edit</i>Приложи</button>
+        </div>
+      </div> <!-- CLOSE CONTAINER -->
+    </div> <!-- settings -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <?!= include("index-js"); ?>
+  </body>
+</html>
+
+

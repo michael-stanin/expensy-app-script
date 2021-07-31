@@ -1,0 +1,448 @@
+<script>
+  
+  // Check storage
+  var userSheetLink = localStorage.getItem('user-sheet-link');
+	currentSheetLink = (userSheetLink === null) ? "" : JSON.parse(userSheetLink);
+    
+  var userIndex = localStorage.getItem('user-index');
+	currentUserIndex = (userIndex === null) ? "0" : JSON.parse(userIndex);
+
+  expenses = [];
+  category_colors = [];
+  categories = [];
+  expenses_donut = null;
+  dataTable = null;
+
+  nice_date_options = { month: 'long', day: '2-digit' };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    _initialize_event_listeners();
+    _initialize_fields();
+  });
+
+  function _initialize_event_listeners() {
+    document.getElementById("link").addEventListener("input", fillSheetData);
+    document.getElementById("change-to-settings").addEventListener("click", _show_settings);
+    document.getElementById("change-to-add").addEventListener("click", _show_add);
+    document.getElementById("change-to-charts").addEventListener("click", _show_charts);
+    document.getElementById("mobile-change-to-settings").addEventListener("click", _show_settings);
+    document.getElementById("mobile-change-to-add").addEventListener("click", _show_add);
+    document.getElementById("mobile-change-to-charts").addEventListener("click", _show_charts);
+    document.getElementById("floating-add").addEventListener("click", _show_add);
+    document.getElementById("floating-add-1").addEventListener("click", _show_add);
+    document.getElementById("floating-add+1").addEventListener("click", _show_add);
+
+    var btnElement = document.getElementById("btn-store");
+    btnElement.addEventListener("click", storeEntry);
+    
+    $('#link, #username, #date, #expense, #price, #category').change(function(){
+      document.getElementById('btn-store').disabled = _should_disable();
+    });
+    
+    // setup listener for custom event to re-initialize on change
+    $('#category').on('contentChanged', function() {
+      var categoriesElement = document.getElementById("category");
+      M.FormSelect.init(categoriesElement);
+    });
+    
+    $('#username').on('contentChanged', function() {
+      var userElement = document.getElementById("username");
+      userElement.selectedIndex = currentUserIndex;
+      M.FormSelect.init(userElement);
+    });
+  }
+
+  function _show_settings() {
+    _change_display_state( "main", "none");
+    _change_display_state( "settings", "");
+    _change_display_state( "charts", "none");
+  }  
+  
+  function _show_add() {
+    _change_display_state( "main", "");
+    _change_display_state( "settings", "none");
+    _change_display_state( "charts", "none");
+  }
+
+  function _show_charts() {
+    google.script.run.withSuccessHandler(_generate_table).fetchTableData(currentSheetLink);
+    _change_display_state("main", "none");
+    _change_display_state("settings", "none");
+    document.getElementById("charts").classList.remove("not-visible");
+    _change_display_state("charts", "");
+  }
+
+  function _change_display_state(elementIds, displayState) {
+    elementIds =  Array.isArray(elementIds) ? elementIds : [elementIds];
+    for (var index = 0; index < elementIds.length; index++) {
+      document.getElementById(elementIds[index]).style.display = displayState;
+    }
+  }
+
+  function _initialize_fields() {
+  
+    ////////////////// Charts //////////////////
+    
+    google.script.run.withSuccessHandler(_generate_table).fetchTableData(currentSheetLink);
+
+    /////////////////////////////////////////////
+    _change_display_state( "settings", "none");
+    document.getElementById("charts").classList.add("not-visible");
+    //_change_display_state("charts", "none");
+
+    M.FloatingActionButton.init(document.querySelectorAll('.fixed-action-btn'), {});
+    M.Sidenav.init(document.querySelectorAll('.sidenav'));
+  
+    // Initialize date
+    var format = "dd/mm/yyyy";
+    var formattedDateString = new Date().toLocaleDateString('en-GB');
+    document.getElementById("date").value = formattedDateString;
+    
+    // Initialize date picker
+    var options = {};
+    options.format = format;
+    options.defaultDate = formattedDateString;
+    options.setDefaultDate = true;
+    options.firstDay = 1;
+    elems = document.getElementById("date");
+    M.Datepicker.init(elems, options);
+    
+    // Initialize text fields
+    document.getElementById("link").value = currentSheetLink;
+    M.updateTextFields();
+    if (currentSheetLink) fillSheetData();
+    
+    // Initialize expenses autocomplete
+    google.script.run.withSuccessHandler(_update_suggestions).fetchSheetExpenses(currentSheetLink);
+    
+    // Initialize select elements
+    elems = document.querySelectorAll('select');
+    M.FormSelect.init(elems);
+  }    
+
+  function _generate_table(dataArray) {
+    expenses = dataArray;
+    google.script.run.withSuccessHandler(_change_row_colors)._fetch_sheet_categories_and_colors();    
+  }
+
+  function _change_row_colors(categories_and_colors) {
+    categories = categories_and_colors[0];
+    category_colors = categories_and_colors[1];
+
+    if (expenses_donut == null) {
+      expenses_donut = _create_donut('expenses-donut', expenses);
+    }
+    else {
+      expenses_donut.setData(_get_grouped_data(expenses));
+    }
+
+    // Example: https://datatables.net/examples/styling/material.html
+    // TODO: consider edditing: https://editor.datatables.net/examples/dates/formatting-client.html
+    // Another example: https://codepen.io/marcmatias/pen/gxPzvY
+    // goal: https://themes.materializecss.com/pages/admin-table-custom-elements
+    if (dataTable == null) {
+      dataTable = _create_data_table();
+      $("select").formSelect();
+    }
+    else {
+      dataTable.clear();
+      dataTable.rows.add( expenses ).draw();
+    }
+   
+  }
+
+  function _create_data_table() {
+    return $('#expenses-table').DataTable( {
+        responsive: true,
+        autoWidth: true,
+        //scrollY:        true,
+        scrollCollapse: false,
+        //fixedColumns: true,
+        data: expenses,//.map(r => [r[0], r[1], new Intl.DateTimeFormat("bg", nice_date_options).format(r[2]), r[3], r[4]]),
+        columns: [
+            { title: "Разход", },
+            { title: "Цена", },
+            { title: "Дата", render: function(data, type, row){ 
+              if(type === "sort" || type === "type"){
+                  return data;
+              }
+              return new Intl.DateTimeFormat("bg", nice_date_options).format(data);
+            }},
+            { title: "Закупил", },
+            { title: "Категория", }
+        ],
+        order: [[2, 'desc'], [4, 'asc'], [1, 'desc']],
+
+        "fnRowCallback": function(row, data, iDisplayIndex, iDisplayIndexFull) {
+          var categoryIndex = categories.indexOf(data[4]);
+          var targetColor = category_colors[categoryIndex];
+          row.style.backgroundColor = targetColor;
+        },
+
+        // Hide default text of page length, instead of using new button
+        initComplete: function( settings, json ) {
+          var $table = $(this);
+          var selectContents = $table.closest('.dataTables_wrapper').find('> div > .dataTables_length label').contents();
+          selectContents.filter(function() {
+              return ($(this).prop('tagName') !== 'SELECT');
+          }).remove();//.wrap('<span class="hidden-xs"></span>');          
+        },
+
+        drawCallback: function () {
+          var api = this.api();
+          var msg = "Сума разходи";
+          var searchTerm = $('.dataTables_filter input').val();
+          if (searchTerm != null && searchTerm != "") {
+            msg += " за <i>" + searchTerm + "</i>";
+          }
+          filteredColumnSum = _get_rounded_number(api.column( 1, {page:'all', search:'applied'} ).data().sum());
+          msg += ": "+ "<b>" + filteredColumnSum.toLocaleString() + "</b>";
+          //msg += ": "+ filteredColumnSum.toLocaleString();
+          var totalSumEl = document.getElementById("total-sum");
+          totalSumEl.innerHTML = msg;
+        },
+        //dom: 'Blfrtip',
+        dom: '<"nav-center"B><"nav-center top-padding"l><"nav-center top-padding"f>rtip',
+        language: {
+          /*
+          buttons: {
+            pageLength: {
+                _: " Покажи %d реда",
+                '-1': " Всички"
+            }
+          },
+          */
+          //sLengthMenu: "_MENU_",
+          /*
+          buttons: {
+            pageLength: '%d'
+          },
+          */
+          searchPlaceholder: "Търси Разходи",
+          search: "",
+        },
+        lengthMenu: [
+            [ 10, 25, 50, 100, -1 ],
+            [ '10 реда', '25 реда', '50 реда', '100 реда', 'Всички' ]        
+        ],
+        buttons: {
+          dom: {
+            button: {
+              tag: 'button',
+              className: ''
+            }
+          },
+          buttons: [
+            { 
+              extend: 'copyHtml5',
+                text: '<i class="fa fa-files-o" aria-hidden="true"> Copy</i>',
+                title: "Expensy data export",
+                className: "center waves-effect waves-light btn",
+                exportOptions: { orthogonal: 'export' }
+            },
+            { 
+              extend: 'csvHtml5',
+                text: '<i class="fa fa-file-text"> Csv</i>',
+                title: "Expensy data export",
+                className: "center waves-effect waves-light btn",
+                exportOptions: { orthogonal: 'export' }
+            },
+            { 
+              extend: 'excelHtml5',
+                text: '<i class="fa fa-file-excel-o" aria-hidden="true"> Excel</i>',
+                title: "Expensy data export",
+                className: "center waves-effect waves-light btn",
+                exportOptions: { orthogonal: 'export' }
+            },
+            { 
+              extend: 'pdfHtml5',
+                text: '<i class="fa fa-file-pdf-o " aria-hidden="true"> Pdf</i>',
+                title: "Expensy data export",
+                className: "center waves-effect waves-light btn",
+                exportOptions: { orthogonal: 'export' }
+            },
+            { 
+              extend: 'print',
+                text: '<i class="fa fa-print" aria-hidden="true"> Print</i>',
+                title: "Expensy data export",
+                className: "center waves-effect waves-light btn",
+                exportOptions: { orthogonal: 'export' }
+            },
+            /*
+            {
+              extend: 'pageLength',
+                className: "fa fa-arrows-v center waves-effect waves-light btn",
+            },
+            */
+            /*
+            {
+              extend: "pageLength",
+              className: "fa fa-arrows-v",
+            }
+            */
+          ],
+        },
+    } ).on('search.dt', function() {
+      var filteredItems = dataTable.rows( { filter : 'applied'} ).data().toArray();
+      expenses_donut.setData(_get_grouped_data(filteredItems));
+    });
+  }
+
+  function _create_donut(elementId, inputData) {
+    return Morris.Donut({
+      element: elementId,
+      resize: true,
+      showPercentage: true,
+      colors: category_colors,
+      labelColor: "teal", // text color
+      //backgroundColor: '#333333', // border color
+      formatter: function (value, data) {
+        var total = parseFloat(document.getElementById("total-sum").innerHTML.replace( /[^0-9-.]/g, ''));
+        var boldedText = document.getElementById("total-sum").getElementsByTagName("b")[0];
+        if (boldedText != null) {
+          total = parseFloat(boldedText.innerHTML.replace( /[^0-9-.]/g, ''));
+        }
+        var percentage = (value/total * 100).toFixed(2);
+        return value + ' (' + percentage + ' %' + ')';
+      },
+      data: _get_grouped_data(inputData)
+    });
+  }
+
+  function _get_grouped_data(data) {
+    groupedData = []
+    categories.forEach(function(c) {
+      groupedData.push({label:c, value:0});
+    });
+
+    data.forEach(function(r) {
+      const found = groupedData.find(element => element.label === r[4]);
+      if (found) {
+        found.value += Number(r[1]);
+      }
+    });
+    
+    groupedData.map(i => i.value = _get_rounded_number(i.value));
+
+    return groupedData;
+  }
+  
+  function _get_rounded_number(num) {
+    return Math.round((num + Number.EPSILON) * 100) / 100;
+  }
+
+  function fillSheetData() {
+    var link = (document.getElementById("link").value == "") ? currentSheetLink : document.getElementById("link").value;
+    if (_is_valid_http_url(link)) {
+      if (link != currentSheetLink) {
+        currentSheetLink = link;
+        localStorage.setItem('user-sheet-link', JSON.stringify(link));
+      }
+      
+      google.script.run.fetchSheetLocale(link);
+      google.script.run.withSuccessHandler(_update_users).withFailureHandler(_update_users_failure).fetchSheetUsers(link);
+      google.script.run.withSuccessHandler(_update_categories).withFailureHandler(_update_categories_failure).fetchSheetCategories(link);
+      google.script.run.fetchSheetCategoryColors(link);
+      google.script.run.withSuccessHandler(_update_suggestions).fetchSheetExpenses(link);
+    }
+  }
+  
+  function storeEntry() {
+    var uname = $('#username').find(":selected").text();
+    var category = $('#category').find(":selected").text();
+    if (uname == "Избери потребител" || category == "Избери категория") return;
+    
+    var entryInfo = {};
+    entryInfo.link = document.getElementById("link").value;
+    entryInfo.username = uname;
+    entryInfo.expense = document.getElementById("expense").value;
+    entryInfo.price = document.getElementById("price").value;
+    entryInfo.date = document.getElementById("date").value;      
+    entryInfo.category = category;
+
+    google.script.run.withSuccessHandler(_add_successful).withFailureHandler(_add_failure).addExpense(entryInfo);
+    
+    localStorage.setItem('user-index', JSON.stringify(document.getElementById("username").selectedIndex));
+    
+    // Reset values
+    _reset_values();
+  }
+      
+  function _update_suggestions(options) {
+    var expenseElement = document.getElementById("expense");
+    M.Autocomplete.init(expenseElement, {data: options});
+  }
+  
+  function _add_successful() {
+    google.script.run.withSuccessHandler(_update_suggestions).fetchSheetExpenses(currentSheetLink);
+    M.toast({html: "Разходът e добавен успешно.", displayLength:3000, classes:"teal lighten-1"});
+  }
+  
+  function _add_failure() {
+    M.toast({html: "Разходът нe е добавен успешно.", displayLength:3000, classes:"red lighten-1"});
+  }
+  
+  function _should_disable() {
+    return document.getElementById('link').value == "" ||
+            document.getElementById('username').selectedIndex == 0 ||
+            document.getElementById('date').value == "" ||
+            document.getElementById('expense').value == "" ||
+          !document.getElementById('price').checkValidity() ||
+            document.getElementById('category').selectedIndex == 0;
+  }
+
+  function _reset_values() {
+    document.getElementById("expense").value = "";
+    document.getElementById("price").value = "";
+    
+    // Disable the button since values are cleared.
+    document.getElementById('btn-store').disabled = true;
+    
+    // TODO: Consider the possibility to clear category selection
+    /*
+    var categoriesElement = document.getElementById("category");
+    categoriesElement.selectedIndex = 0;
+    M.FormSelect.init(categoriesElement);
+    */
+  }
+
+  function _update_users(availableUsers) {
+    _update_options("#username", availableUsers);
+  }
+  
+  function _update_users_failure() {
+    M.toast({html: "Не са намерени потребители!", displayLength:3000, classes:"red lighten-1"});
+  }
+  
+  function _update_categories(availableCategories) {
+    _update_options("#category", availableCategories);
+  }
+  
+  function _update_categories_failure() {
+    M.toast({html: "Не са намерени категории!", displayLength:3000, classes:"red lighten-1"});
+  }
+  
+  function _update_options(selectId, arr) {
+    $(selectId).find('option').not(':first').remove();
+    for (i in arr) {
+      var $newOpt = $("<option>").attr("value",i).text(arr[i]);
+      $(selectId).append($newOpt);
+    }
+    
+    // fire custom event anytime you've updated select
+    $(selectId).trigger('contentChanged');
+  }
+  
+  function _is_valid_http_url(string) {
+    let url;
+  
+    try {
+      url = new URL(string);
+    } catch (_) {
+      return false;  
+    }
+  
+    return url.protocol === "http:" || url.protocol === "https:";
+  }
+
+</script>
