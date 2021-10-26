@@ -15,3 +15,5 @@
             [Optional] clasp undeploy <deploymentId>
         3. [Optional] Update an existing deployment with a new version and description -> clasp redeploy <deploymentId> <version> <description>
     
+# TODO
+    - [Authentication](https://github.com/googleworkspace/apps-script-oauth2)
