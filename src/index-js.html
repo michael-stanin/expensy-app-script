@@ -112,9 +112,6 @@
     M.updateTextFields();
     if (currentSheetLink) fillSheetData();
     
-    // Initialize expenses autocomplete
-    google.script.run.withSuccessHandler(_update_suggestions).fetchSheetExpenses(currentSheetLink);
-    
     // Initialize select elements
     elems = document.querySelectorAll('select');
     M.FormSelect.init(elems);
@@ -343,7 +340,9 @@
       google.script.run.withSuccessHandler(_update_users).withFailureHandler(_update_users_failure).fetchSheetUsers(link);
       google.script.run.withSuccessHandler(_update_categories).withFailureHandler(_update_categories_failure).fetchSheetCategories(link);
       google.script.run.fetchSheetCategoryColors(link);
-      google.script.run.withSuccessHandler(_update_suggestions).fetchSheetExpenses(link);
+      
+      // Initialize expenses autocomplete
+      google.script.run.withSuccessHandler(_update_suggestions).withFailureHandler(_update_suggestions_failure).fetchSheetExpenses(link);
     }
   }
   
@@ -367,14 +366,18 @@
     // Reset values
     _reset_values();
   }
-      
-  function _update_suggestions(options) {
+
+  function _update_suggestions(entries) {
     var expenseElement = document.getElementById("expense");
-    M.Autocomplete.init(expenseElement, {data: options});
+    M.Autocomplete.init(expenseElement, {data : JSON.parse(entries)});
   }
   
+  function _update_suggestions_failure() {
+    M.toast({html: "Предложенията за име на разход не бяха обновени.", displayLength:3000, classes:"red lighten-1"});
+  }
+
   function _add_successful() {
-    google.script.run.withSuccessHandler(_update_suggestions).fetchSheetExpenses(currentSheetLink);
+    google.script.run.withSuccessHandler(_update_suggestions).withFailureHandler(_update_suggestions_failure).fetchSheetExpenses(currentSheetLink);
     M.toast({html: "Разходът e добавен успешно.", displayLength:3000, classes:"teal lighten-1"});
   }
   

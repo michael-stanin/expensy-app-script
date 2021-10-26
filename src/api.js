@@ -26,18 +26,19 @@ function fetchSheetExpenses(link) {
   var ss = SpreadsheetApp.openByUrl(link);
   if (ss === undefined || ss === null) { return; }  
   
-  var changesSheetName = mylocale == "BG" ? "Промени" : "Changes";
-  var initialDataSheetName = mylocale == "BG" ? "Начални данни" : "Initial data";
+  var specialSheetNames = [
+   mylocale == "BG" ? "Промени" : "Changes",
+   mylocale == "BG" ? "Начални данни" : "Initial data",
+   mylocale == "BG" ? "Настройки" : "Settings"
+  ];
 
   var options = {};
   for (let s of ss.getSheets()) {
     var sheetName = s.getName();
-    if (sheetName != changesSheetName && sheetName != initialDataSheetName) {  
-      
+    
+    if (!specialSheetNames.includes(sheetName)) {  
       var data = s.getRange("A2:A").getValues().filter(String);
-      data.forEach(function (v) {
-        options[v[0]] = null;
-      });
+      options = data.reduce((a,x) => ({...a, [String(x)]: null}), options);      
     }
   }
 
@@ -55,7 +56,7 @@ function fetchSheetExpenses(link) {
     }
   });
   */
-  return options;
+  return JSON.stringify(options);
 }
 
 function fetchSheetLocale(link) {
