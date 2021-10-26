@@ -1,7 +1,7 @@
 # expensy-app-script
 
 
-# Working with clasp (https://developers.google.com/apps-script/guides/clasp)
+# [Working with clasp](https://developers.google.com/apps-script/guides/clasp)
     - Check status -> clasp status
     - Download script project -> clasp pull
     - Upload script project -> clasp push
