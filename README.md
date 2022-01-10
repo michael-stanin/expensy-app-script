@@ -5,6 +5,7 @@
     - Check status -> clasp status
     - Download script project -> clasp pull
     - Upload script project -> clasp push
+    - Upload continuously script project -> clasp push --watch
     - List project versions -> clasp versions
     - List deploymnets -> clasp deployments
     - Open project in Apps Script editor -> clasp open
