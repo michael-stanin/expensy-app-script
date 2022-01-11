@@ -85,10 +85,30 @@ function fetchTableData(link) {
     if (s != null) {
       //data = s.getRange("A2:E").getValues().filter(String);
       data = s.getRange(2, 1, s.getLastRow() -1, 5).getValues().filter(String);
+      data = removeBlanksFromRange(data);
     }
     currentyearDiff++;
   } while (s == null && currentyearDiff <= maximumYearDiff);
 
   data.map(i => i[2] = Date.parse(i[2]));
   return data;
+}
+
+function removeBlanksFromRange(source) {
+  var filtered = [];
+  for (let i = 0; i < source.length; i++) {
+    var foundBlank = false;
+    for (let j = 0; !foundBlank && j < source[i].length; j++) {
+      foundBlank = isBlank(source[i][j]);
+    }
+    if (!foundBlank) {
+      filtered.push(source[i]);
+    }
+  }
+
+  return filtered;
+}
+
+function isBlank(str) {
+  return (!str || /^\s*$/.test(str));
 }

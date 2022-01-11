@@ -42,6 +42,16 @@ function _add_entry_internal(entryInfo) {
     var targetSheetName = new Date(entryInfo.date.split("/")[2]).getFullYear().toString();
     Logger.log("Sheet name deduced: " + targetSheetName);
     var target = ss.getSheetByName(targetSheetName);
+    if (target === null) {
+      target = ss.insertSheet(targetSheetName);
+      var rowMinmimumCount = 40;
+      var columnMinimumCount = 14
+      var lastRow = target.getMaxRows();
+      var lastColumn = target.getMaxColumns()
+      target.deleteRows(rowMinmimumCount, lastRow - rowMinmimumCount);
+      target.deleteColumns(columnMinimumCount, lastColumn - columnMinimumCount);
+      _fill_sheet_data(ss, target);
+    }
     if (target != null) {
       Logger.log("Found sheet: " + targetSheetName);
       
@@ -80,10 +90,8 @@ function _insert_Row(sheet, rowData) {
 }
 
 function _fetch_sheet_category_color(category) {
-  var categoryColors = JSON.parse(PropertiesService.getUserProperties().getProperty('categoryColors'));
-  var categories = JSON.parse(PropertiesService.getUserProperties().getProperty('categories'));
-  var categoryIndex = categories.indexOf(category);
-  return categoryColors[categoryIndex];
+  var categories_and_colors = _fetch_sheet_categories_and_colors();
+  return categories_and_colors[1][categories_and_colors[0].indexOf(category)];
 }
 
 function _fetch_sheet_categories_and_colors() {
