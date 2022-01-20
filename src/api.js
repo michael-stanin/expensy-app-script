@@ -13,6 +13,28 @@ function fetchSheetCategories(link) {
   return categories;
 }
 
+function fetchExpensesYearSheets(link) {
+  var ss = SpreadsheetApp.openByUrl(link);
+  if (ss === undefined || ss === null) { return; }
+
+  var specialSheetNames = [
+    mylocale == "BG" ? "Промени" : "Changes",
+    mylocale == "BG" ? "Начални данни" : "Initial data",
+    mylocale == "BG" ? "Настройки" : "Settings"
+   ];
+ 
+   var existingYearSheet = [];
+   for (let s of ss.getSheets()) {
+     var sheetName = s.getName();
+     
+     if (!specialSheetNames.includes(sheetName)) {  
+       existingYearSheet.push(sheetName);
+     }
+   }
+
+   return existingYearSheet;
+}
+
 function fetchSheetCategoryColors(link) {
   var ss = SpreadsheetApp.openByUrl(link);
   if (ss === undefined || ss === null) { return; }
@@ -70,27 +92,40 @@ function fetchSheetLocale(link) {
     mylocale = "EN";
 }
 
-function fetchTableData(link) {
+function fetchTableData(link, sheetName) {
   var ss = SpreadsheetApp.openByUrl(link);
   if (ss === undefined || ss === null) { return; }  
   
   var data = [];
-  
-  var maximumYearDiff = 10;
-  var currentyearDiff = 0;
-  do
-  {
-    var desiredSheetName = new Date().getFullYear() - currentyearDiff;
-    var s = ss.getSheetByName(desiredSheetName);
+  if (sheetName) {
+    var s = ss.getSheetByName(sheetName);
     if (s != null) {
-      //data = s.getRange("A2:E").getValues().filter(String);
-      data = s.getRange(2, 1, s.getLastRow() -1, 5).getValues().filter(String);
-      data = removeBlanksFromRange(data);
+      data = fetchSheetExpensesData(s);
     }
-    currentyearDiff++;
-  } while (s == null && currentyearDiff <= maximumYearDiff);
+  }
+  else {
+    var specialSheetNames = [
+      mylocale == "BG" ? "Промени" : "Changes",
+      mylocale == "BG" ? "Начални данни" : "Initial data",
+      mylocale == "BG" ? "Настройки" : "Settings"
+     ];
+
+     for (let s of ss.getSheets()) {
+       if (!specialSheetNames.includes(s.getName())) {  
+         data.push.apply(data, fetchSheetExpensesData(s));
+       }
+     }
+  
+  }  
 
   data.map(i => i[2] = Date.parse(i[2]));
+  return data;
+}
+
+function fetchSheetExpensesData(sheet)
+{
+  var data = sheet.getRange(2, 1, sheet.getLastRow() -1, 5).getValues().filter(String);
+  data = removeBlanksFromRange(data);
   return data;
 }
 

@@ -50,6 +50,24 @@
       userElement.selectedIndex = currentUserIndex;
       M.FormSelect.init(userElement);
     });
+    
+    $('#year-expenses').on('contentChanged', function() {
+      var yearExpensesElement = document.getElementById("year-expenses");
+      M.FormSelect.init(yearExpensesElement);
+    });   
+    
+    $('#year-expenses').change(function(){
+      var yearExpensesSelected = $('#year-expenses').find(":selected").text();
+      var sheetName = yearExpensesSelected;
+      if (yearExpensesSelected === "Всички" ) {
+        sheetName = undefined;
+      }
+      else if (yearExpensesSelected === "Избери година") {
+        sheetName = new Date().getFullYear();
+      }
+      google.script.run.withSuccessHandler(_generate_table).fetchTableData(currentSheetLink, sheetName);
+    });
+
   }
 
   function _show_settings() {
@@ -65,7 +83,7 @@
   }
 
   function _show_charts() {
-    google.script.run.withSuccessHandler(_generate_table).fetchTableData(currentSheetLink);
+    google.script.run.withSuccessHandler(_generate_table).fetchTableData(currentSheetLink, new Date().getFullYear());
     _change_display_state("main", "none");
     _change_display_state("settings", "none");
     document.getElementById("charts").classList.remove("not-visible");
@@ -83,7 +101,7 @@
   
     ////////////////// Charts //////////////////
     
-    google.script.run.withSuccessHandler(_generate_table).fetchTableData(currentSheetLink);
+    google.script.run.withSuccessHandler(_generate_table).fetchTableData(currentSheetLink, new Date().getFullYear());
 
     /////////////////////////////////////////////
     _change_display_state( "settings", "none");
@@ -339,6 +357,7 @@
       google.script.run.fetchSheetLocale(link);
       google.script.run.withSuccessHandler(_update_users).withFailureHandler(_update_users_failure).fetchSheetUsers(link);
       google.script.run.withSuccessHandler(_update_categories).withFailureHandler(_update_categories_failure).fetchSheetCategories(link);
+      google.script.run.withSuccessHandler(_update_year_expenses_sheets).withFailureHandler(_update_expenses_year_sheets_failure).fetchExpensesYearSheets(link);
       google.script.run.fetchSheetCategoryColors(link);
       
       // Initialize expenses autocomplete
@@ -421,6 +440,17 @@
     _update_options("#category", availableCategories);
   }
   
+  function _update_year_expenses_sheets(availableYearExpensesSheets) {
+    _update_options("#year-expenses", availableYearExpensesSheets);
+    var $newOpt = $("<option>").attr("value", $("<option>").length+1).text("Всички");
+    $("#year-expenses").append($newOpt);
+    $("#year-expenses").trigger('contentChanged');
+  }
+
+  function _update_expenses_year_sheets_failure() {
+    M.toast({html: "Не са намерени разходи!", displayLength:3000, classes:"red lighten-1"});
+  }
+
   function _update_categories_failure() {
     M.toast({html: "Не са намерени категории!", displayLength:3000, classes:"red lighten-1"});
   }
